@@ -28,20 +28,21 @@ dist_min = st.sidebar.number_input("Distância mínima (m)", value=320.0, step=1
 def identificar_zonas_curvas(linha, recuo=150):
     zonas = []
     passo = 10
-    for d in range(passo, int(linha.length) - passo, passo):
-        p1, p2, p3 = linha.interpolate(d-passo), linha.interpolate(d), linha.interpolate(d+passo)
-        v1 = np.array([p2.x-p1.x, p2.y-p1.y])
-        v2 = np.array([p3.x-p2.x, p3.y-p2.y])
-        norm = (np.linalg.norm(v1) * np.linalg.norm(v2))
-        if norm != 0 and (np.dot(v1, v2)/norm) < 0.9995:
-            zonas.append((d - recuo, d + recuo))
+    try:
+        for d in range(passo, int(linha.length) - passo, passo):
+            p1, p2, p3 = linha.interpolate(d-passo), linha.interpolate(d), linha.interpolate(d+passo)
+            v1 = np.array([p2.x-p1.x, p2.y-p1.y])
+            v2 = np.array([p3.x-p2.x, p3.y-p2.y])
+            norm = (np.linalg.norm(v1) * np.linalg.norm(v2))
+            if norm != 0 and (np.dot(v1, v2)/norm) < 0.9995:
+                zonas.append((d - recuo, d + recuo))
+    except:
+        pass
     return zonas
 
-# --- LÓGICA DE GERAÇÃO ---
 if uploaded_file:
-    if 'last_uploaded' not in st.session_state or st.session_state['last_uploaded'] != uploaded_file.name:
+    if 'amostras' not in st.session_state:
         st.session_state['amostras'] = None
-        st.session_state['last_uploaded'] = uploaded_file.name
 
     if st.sidebar.button("Gerar Amostras"):
         with st.spinner('Calculando pontos e gerando mapa...'):
@@ -86,35 +87,23 @@ if uploaded_file:
 
             st.session_state['amostras'] = pd.DataFrame(dados_finais)
 
-    # --- EXIBIÇÃO ---
-    if st.session_state.get('amostras') is not None:
+    if st.session_state['amostras'] is not None:
         df_final = st.session_state['amostras']
-        
         st.subheader("📋 Tabela de Amostragem")
         st.dataframe(df_final.drop(columns=['geometry', 'crs_origem']), use_container_width=True)
 
-        # --- MAPA INTERATIVO ---
         st.subheader("🗺️ Visualização Espacial")
-        
-        # Centraliza o mapa na média das coordenadas
-        m = folium.Map(location=[df_final.Latitude.mean(), df_final.Longitude.mean()], zoom_start=13, control_scale=True)
+        m = folium.Map(location=[df_final.Latitude.mean(), df_final.Longitude.mean()], zoom_start=13)
         folium.TileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', attr='Google', name='Google Satellite').add_to(m)
-
         cores = {"Bordo Direito": "red", "Eixo": "blue", "Bordo Esquerdo": "green"}
-        
         for _, row in df_final.iterrows():
             folium.CircleMarker(
                 location=[row['Latitude'], row['Longitude']],
-                radius=5,
-                color=cores[row['Posição Lateral']],
-                fill=True,
-                fill_opacity=0.7,
-                popup=f"<b>{row['Identificação']}</b><br>{row['Posição Lateral']}<br>{row['Quilometragem']}"
+                radius=5, color=cores[row['Posição Lateral']], fill=True,
+                popup=f"{row['Identificação']}: {row['Posição Lateral']}"
             ).add_to(m)
-        
-        st_folium(m, width=1200, height=500, returned_objects=[])
+        st_folium(m, width=1100, height=500, returned_objects=[])
 
-        # --- DOWNLOADS ---
         col1, col2 = st.columns(2)
         
         # Download KML
