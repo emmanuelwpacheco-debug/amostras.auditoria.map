@@ -25,7 +25,7 @@ area_min = st.sidebar.number_input("Área mínima por amostra (m²) - Norma", va
 qtd_desejada = st.sidebar.number_input("Quantidade de amostras pretendida", value=50, step=1)
 dist_min = st.sidebar.number_input("Distância mínima entre pontos (m)", value=320.0, step=10.0)
 
-def identificar_zonas_curvas(linha, recuo=150):
+def identificar_zonas_curvas(linha, recuo=250):
     zonas = []
     passo = 10
     try:
@@ -83,7 +83,7 @@ if uploaded_file:
     extensao_total = linha_rodovia.length
     n_minimo_ibraop = int(np.ceil((extensao_total * largura) / area_min))
     
-    st.info(f"📏 Extensão detectada: {extensao_total/1000:.2f} km | Mínimo requerido (IBRAOP): **{n_minimo_ibraop} amostras**")
+    st.info(f"📏 Extensão do trecho: {extensao_total/1000:.2f} km | Quantidade mínima de amostras (PROC–IBR–ROD 100/2017-IBRAOP): **{n_minimo_ibraop} amostras**")
 
     # Inicializa variáveis de controle
     executar_geracao = False
@@ -91,7 +91,7 @@ if uploaded_file:
 
     # 3. Verificação de Alerta
     if qtd_desejada < n_minimo_ibraop:
-        st.warning(f"⚠️ **ALERTA TÉCNICO:** A quantidade solicitada ({qtd_desejada}) é inferior ao mínimo requerido pela norma IBRAOP ({n_minimo_ibraop}).")
+        st.warning(f"⚠️ **ALERTA TÉCNICO:** A quantidade solicitada ({qtd_desejada}) é inferior ao mínimo requerido pelo procedimento PROC–IBR–ROD 100/2017 ({n_minimo_ibraop}).")
         
         col_btn1, col_btn2 = st.columns(2)
         if col_btn1.button(f"Corrigir para Mínimo ({n_minimo_ibraop})"):
